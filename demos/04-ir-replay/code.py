@@ -18,14 +18,13 @@ import time
 
 import board
 import pulseio
-import pwmio
 
 from adafruit_circuitplayground import cp
 
 pulsein = pulseio.PulseIn(board.IR_RX, maxlen=200, idle_state=True)
 pulsein.pause()
-pwm = pwmio.PWMOut(board.IR_TX, frequency=38000, duty_cycle=2 ** 15)
-pulseout = pulseio.PulseOut(pwm)
+# CircuitPython 9.x: PulseOut takes the pin directly (not a PWMOut object).
+pulseout = pulseio.PulseOut(board.IR_TX, frequency=38000, duty_cycle=2 ** 15)
 
 captured = None
 
