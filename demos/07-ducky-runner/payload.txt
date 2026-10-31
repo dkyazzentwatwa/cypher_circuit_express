@@ -1,0 +1,13 @@
+REM Benign demo payload -- opens TextEdit (macOS) and types two lines.
+REM Edit this file to change the "attack" without touching code.py.
+DELAY 500
+GUI SPACE
+DELAY 600
+STRING TextEdit
+DELAY 400
+ENTER
+DELAY 1500
+GUI N
+DELAY 800
+STRINGLN This payload came from payload.txt on the board.
+STRINGLN Swap the file, swap the attack -- that is the whole idea.

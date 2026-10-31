@@ -29,8 +29,9 @@ and crypto demos.
 
 ## Demo catalog
 
-Flagship demos (**bold**) are built and polished first; the rest scaffold on top of the same
-`shared/` helpers.
+All 22 demos are implemented. Flagship demos (**bold**) were built and hardware-verified first;
+demo 01 is confirmed on real hardware, and the rest are written and static-checked (flash them as
+you film). Each demo is a self-contained, single-file `code.py` (see Repo layout for why).
 
 | # | Demo | Hardware | Security lesson |
 |---|------|----------|-----------------|
