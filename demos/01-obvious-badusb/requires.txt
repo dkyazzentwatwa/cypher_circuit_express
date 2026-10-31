@@ -1,0 +1,3 @@
+# Adafruit libraries this demo needs (copied from $CP_BUNDLE by tools/deploy.py)
+adafruit_circuitplayground
+adafruit_hid

@@ -1,0 +1,15 @@
+# CircuitPython / Python
+__pycache__/
+*.pyc
+
+# Local Adafruit library bundle (downloaded per SETUP.md, not committed)
+bundle/
+cp-bundle/
+lib-bundle/
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
