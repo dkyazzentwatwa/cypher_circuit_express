@@ -1,20 +1,25 @@
 """05 - TOTP token (RFC 6238).
 
 Computes the same 6-digit time-based codes your authenticator app shows, on the
-board, from a shared secret. Shows HOW 2FA tokens work: HMAC-SHA1 over a 30s
-time counter, then truncated to 6 digits.
+board, from a shared secret: HMAC-SHA1 over a 30s time counter, truncated to 6
+digits.
 
-SHA-1 + HMAC are implemented in pure Python here, because the SAMD21 build has
-no `hashlib`/`binascii` (adafruit_hashlib can't load). Verified against CPython.
+The SAMD21 build has no hashlib/binascii, so SHA-1 + HMAC are pure Python here,
+with a memory-optimized 16-word rolling schedule (the naive 80-word version runs
+out of RAM on this chip). Verified against CPython's hmac/hashlib. We drive the
+NeoPixels directly via `neopixel` (not the heavier circuitplayground library) to
+leave room for the HMAC.
 
-The CPX has no clock or network, so seed the time over the USB serial console:
-open the console, and when prompted paste the output of `date +%s` and press
-Enter. NeoPixels show the 30s window counting down; codes print to serial.
-Verify with `oathtool --totp -b JBSWY3DPEHPK3PXP` or Google Authenticator.
+The CPX has no clock/network, so seed the time over the USB serial console: open
+it, and when prompted paste the output of `date +%s` and press Enter. NeoPixels
+show the 30s window; codes print to serial. Verify with
+`oathtool --totp -b JBSWY3DPEHPK3PXP` or Google Authenticator.
 """
 
+import gc
 import time
-from adafruit_circuitplayground import cp
+import board
+import neopixel
 
 _M = 0xffffffff
 
@@ -33,10 +38,12 @@ def sha1(msg):
     msg += ml.to_bytes(8, "big")
     for i in range(0, len(msg), 64):
         w = [int.from_bytes(msg[i + j:i + j + 4], "big") for j in range(0, 64, 4)]
-        for j in range(16, 80):
-            w.append(_rol(w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16], 1))
         a, b, c, d, e = h0, h1, h2, h3, h4
         for j in range(80):
+            if j >= 16:
+                w[j & 15] = _rol(w[(j + 13) & 15] ^ w[(j + 8) & 15] ^
+                                 w[(j + 2) & 15] ^ w[j & 15], 1)
+            wj = w[j & 15]
             if j < 20:
                 f = (b & c) | ((b ^ _M) & d); kk = 0x5A827999
             elif j < 40:
@@ -45,7 +52,7 @@ def sha1(msg):
                 f = (b & c) | (b & d) | (c & d); kk = 0x8F1BBCDC
             else:
                 f = b ^ c ^ d; kk = 0xCA62C1D6
-            t = (_rol(a, 5) + f + e + kk + w[j]) & _M
+            t = (_rol(a, 5) + f + e + kk + wj) & _M
             e, d, c, b, a = d, c, _rol(b, 30), a, t
         h0 = (h0 + a) & _M
         h1 = (h1 + b) & _M
@@ -59,9 +66,7 @@ def hmac_sha1(key, msg):
     if len(key) > 64:
         key = sha1(key)
     key = key + b"\x00" * (64 - len(key))
-    o_pad = bytes(b ^ 0x5C for b in key)
-    i_pad = bytes(b ^ 0x36 for b in key)
-    return sha1(o_pad + sha1(i_pad + msg))
+    return sha1(bytes(x ^ 0x5C for x in key) + sha1(bytes(x ^ 0x36 for x in key) + msg))
 
 
 SECRET = "JBSWY3DPEHPK3PXP"   # base32; swap for your own test secret
@@ -84,27 +89,33 @@ def _b32decode(s):
 
 
 def totp(secret_b32, for_time):
-    key = _b32decode(secret_b32)
-    counter = int(for_time // STEP)
-    h = hmac_sha1(key, counter.to_bytes(8, "big"))
+    h = hmac_sha1(_b32decode(secret_b32), int(for_time // STEP).to_bytes(8, "big"))
     off = h[-1] & 0x0F
     code = ((h[off] & 0x7F) << 24 | (h[off + 1] & 0xFF) << 16 |
             (h[off + 2] & 0xFF) << 8 | (h[off + 3] & 0xFF))
-    return str(code % (10 ** DIGITS)).rjust(DIGITS, "0")
+    # CircuitPython str has no .rjust(), so zero-pad with % formatting.
+    return ("%0" + str(DIGITS) + "d") % (code % (10 ** DIGITS))
 
+
+pixels = neopixel.NeoPixel(board.NEOPIXEL, 10, brightness=0.3, auto_write=True)
 
 print("Paste current Unix time (run `date +%s`), then Enter:")
 base = int(input().strip())
 boot = time.monotonic()
 
+# NOTE: on SAMD21, time.monotonic() is a float32 and the Unix epoch (~1.7e9) is
+# well past its precision — adding a float delta to `base` as a float would
+# corrupt `now`. So keep `now` as an int by converting the elapsed delta before
+# the add.
 while True:
-    now = base + (time.monotonic() - boot)
+    gc.collect()
+    now = base + int(time.monotonic() - boot)
     code = totp(SECRET, now)
-    remaining = STEP - int(now % STEP)
+    remaining = STEP - (now % STEP)
     lit = max(1, round(remaining / STEP * 10))
-    cp.pixels.fill((0, 0, 0))
+    pixels.fill((0, 0, 0))
     color = (0, 30, 0) if remaining > 5 else (40, 20, 0)
     for i in range(lit):
-        cp.pixels[i] = color
+        pixels[i] = color
     print("TOTP:", code, " (%2ds left)" % remaining)
     time.sleep(1)

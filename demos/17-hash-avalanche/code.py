@@ -5,11 +5,12 @@ one RGB pixel). Button A increments a counter and re-hashes; button B hashes the
 SAME counter plus one extra character. Watch how a tiny input change scrambles
 the whole output -- that's the avalanche effect that makes hashes useful.
 
-SHA-256 is implemented in pure Python here: the SAMD21 CircuitPython build has
-no `hashlib` and no `binascii` (so adafruit_hashlib can't load), so we do it by
-hand. Verified against CPython's hashlib. Full hex prints to serial.
+SHA-256 is pure Python here (the SAMD21 build has no hashlib/binascii), using a
+memory-optimized 16-word rolling schedule. Verified against CPython's hashlib.
+Full hex prints to serial.
 """
 
+import gc
 import time
 from adafruit_circuitplayground import cp
 
@@ -44,18 +45,19 @@ def sha256(msg):
     msg += ml.to_bytes(8, "big")
     for i in range(0, len(msg), 64):
         w = [int.from_bytes(msg[i + j:i + j + 4], "big") for j in range(0, 64, 4)]
-        for j in range(16, 64):
-            s0 = _rotr(w[j - 15], 7) ^ _rotr(w[j - 15], 18) ^ (w[j - 15] >> 3)
-            s1 = _rotr(w[j - 2], 17) ^ _rotr(w[j - 2], 19) ^ (w[j - 2] >> 10)
-            w.append((w[j - 16] + s0 + w[j - 7] + s1) & _M)
         a, b, c, d, e, f, g, hh = h
         for j in range(64):
+            if j >= 16:
+                x1 = w[(j + 1) & 15]
+                x14 = w[(j + 14) & 15]
+                s0 = _rotr(x1, 7) ^ _rotr(x1, 18) ^ (x1 >> 3)
+                s1 = _rotr(x14, 17) ^ _rotr(x14, 19) ^ (x14 >> 10)
+                w[j & 15] = (w[j & 15] + s0 + w[(j + 9) & 15] + s1) & _M
+            wj = w[j & 15]
             S1 = _rotr(e, 6) ^ _rotr(e, 11) ^ _rotr(e, 25)
-            ch = (e & f) ^ ((e ^ _M) & g)
-            t1 = (hh + S1 + ch + _K[j] + w[j]) & _M
+            t1 = (hh + S1 + ((e & f) ^ ((e ^ _M) & g)) + _K[j] + wj) & _M
             S0 = _rotr(a, 2) ^ _rotr(a, 13) ^ _rotr(a, 22)
-            maj = (a & b) ^ (a & c) ^ (b & c)
-            t2 = (S0 + maj) & _M
+            t2 = (S0 + ((a & b) ^ (a & c) ^ (b & c))) & _M
             hh, g, f, e = g, f, e, (d + t1) & _M
             d, c, b, a = c, b, a, (t1 + t2) & _M
         for n, v in enumerate((a, b, c, d, e, f, g, hh)):
@@ -64,6 +66,7 @@ def sha256(msg):
 
 
 def show(text):
+    gc.collect()
     d = sha256(text.encode())
     for i in range(10):
         cp.pixels[i] = (d[3 * i], d[3 * i + 1], d[3 * i + 2])
