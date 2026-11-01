@@ -2,6 +2,14 @@
 
 **One $25 dev board. 20+ hands-on cybersecurity demos.**
 
+<p align="center">
+  <a href="https://www.adafruit.com/product/3333">
+    <img src="https://cdn-shop.adafruit.com/970x728/3333-05.jpg" alt="Adafruit Circuit Playground Express held in a hand, NeoPixels lit in rainbow colors" width="520">
+  </a>
+  <br>
+  <sub><i>Photo: <a href="https://www.adafruit.com/product/3333">Adafruit — Circuit Playground Express, product 3333</a>.</i></sub>
+</p>
+
 This repo turns an [Adafruit **Circuit Playground Express**](https://www.adafruit.com/product/3333)
 (CPX) into a pocket security-education lab. Every demo is a short, filmable CircuitPython
 program that teaches one security concept using nothing but the board's built-in hardware —
@@ -16,6 +24,18 @@ actually understand it.
 > hardware you own. Payloads are deliberately harmless.
 
 ## The board (why it's great for this)
+
+<p align="center">
+  <a href="https://www.adafruit.com/product/3333">
+    <img src="https://cdn-shop.adafruit.com/970x728/3333-11.jpg" alt="Top-down view of the Circuit Playground Express showing NeoPixels, buttons, slide switch, buzzer, mic, light sensor, and touch pads around the edge" width="460">
+  </a>
+  &nbsp;
+  <a href="https://www.adafruit.com/product/3333">
+    <img src="https://cdn-shop.adafruit.com/970x728/3333-08.jpg" alt="Bottom view of the Circuit Playground Express next to a US quarter for scale" width="460">
+  </a>
+  <br>
+  <sub><i>Photos: <a href="https://www.adafruit.com/product/3333">Adafruit</a>. Round, quarter-sized, and absolutely packed.</i></sub>
+</p>
 
 Microchip ATSAMD21 (Cortex-M0+), runs CircuitPython, and over USB it enumerates as a
 **trusted HID device** (keyboard/mouse) — the whole basis of BadUSB. It also packs:
@@ -79,3 +99,7 @@ drop-in upgrade that adds BLE — opening up BLE HID injection and BLE scanning 
   SAMD21 has only ~32KB RAM, which isn't enough to import a shared helper package *and* the HID
   libraries at once, so each demo inlines just what it needs and imports heavy libs lazily.
 - `tools/` — host-side helpers: `deploy.py` and the optional exfil decoders.
+
+---
+
+<sub>Board photos are hotlinked from Adafruit's product CDN and are the property of <a href="https://www.adafruit.com/product/3333">Adafruit Industries</a>. This repo is not affiliated with Adafruit; it just points at a great board you can buy from them.</sub>
