@@ -1,6 +1,6 @@
 # cypher_circuit_express
 
-**One $25 dev board. 20+ hands-on cybersecurity demos.**
+**One unique dev board. 20+ hands-on cybersecurity demos.**
 
 <p align="center">
   <a href="https://www.adafruit.com/product/3333">
