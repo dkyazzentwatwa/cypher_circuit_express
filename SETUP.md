@@ -19,8 +19,12 @@ CircuitPython version, installs packages correctly, and pulls dependencies:
 
 ```bash
 pip install circup
-circup --path /Volumes/CIRCUITPY install adafruit_hid adafruit_circuitplayground adafruit_irremote adafruit_hashlib
+circup --path /Volumes/CIRCUITPY install adafruit_hid adafruit_circuitplayground
 ```
+
+Those two cover every demo. Everything else the demos use (`pulseio`, `audiobusio`,
+`board`, `usb_hid`, `os`) is built into CircuitPython, and SHA-1/SHA-256 are implemented
+in pure Python in demos 05/17 (the SAMD21 build has no `hashlib`/`binascii`).
 
 Each demo's `requires.txt` lists exactly what it needs; `tools/deploy.py` prints the precise
 `circup` command for anything still missing on the board.
